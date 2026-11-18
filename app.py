@@ -71,7 +71,7 @@ st.set_page_config(
     page_title="SPARK - Smart Platform for AI Recognition and Knowledge",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom Styling (Hostinger Console & Modern Aesthetic Tech Theme)
@@ -97,13 +97,13 @@ st.markdown("""
     .spark-hero {
         position: relative;
         text-align: center;
-        padding: 2.2rem 1rem 1.5rem 1rem;
+        padding: 1.8rem 1rem 1.4rem 1rem;
         border-radius: 20px;
         background: linear-gradient(180deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.25) 100%);
         border: 1px solid rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(16px);
         box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-        margin-bottom: 2rem;
+        margin-bottom: 1.8rem;
         overflow: hidden;
     }
     
@@ -363,57 +363,14 @@ def get_detector() -> AIDetector:
 
 detector = get_detector()
 
-# Sidebar / Top Toolbar for Controls
-with st.sidebar:
-    st.markdown("### ⚙️ Detection Settings")
-    sensitivity_choice = st.selectbox(
-        "Sensitivity Preset:",
-        [
-            "Balanced (Recommended)",
-            "Strict AI (Catch subtle/rephrased AI)",
-            "Human-Safe (Minimize false positives)"
-        ],
-        index=0,
-        help="Adjust how aggressively the model flags AI vs Human writing."
-    )
-    if "Strict" in sensitivity_choice:
-        sens_mode = "strict_ai"
-        st.info("🎯 **Strict Mode**: Highly sensitive to subtle, polished AI text. Best for academic integrity checks.")
-    elif "Human-Safe" in sensitivity_choice:
-        sens_mode = "human_safe"
-        st.info("🛡️ **Human-Safe Mode**: Gives benefit of doubt to formal human essays and reports.")
-    else:
-        sens_mode = "balanced"
-        st.caption("⚖️ **Balanced**: Optimal balance between false positives and false negatives.")
-        
-    st.divider()
-    st.markdown("### 🔬 How It Works")
-    st.caption(
-        "- **Burstiness**: Humans vary sentence length wildly; AI is uniform.\n"
-        "- **Contractions**: Humans say *don't, it's*; AI says *do not, it is*.\n"
-        "- **Perspective**: 1st-person voice indicates authentic human experience.\n"
-        "- **Punctuation**: Humans use dashes, semicolons, and parentheses."
-    )
+# Default sensitivity mode
+sens_mode = "balanced"
 
 # SPARK Hero Section
 st.markdown("""
 <div class="spark-hero">
-    <div class="spark-badge">
-        <span class="pulse-dot"></span>
-        <span>Next-Gen Text Intelligence &bull; Engine v2.5</span>
-    </div>
     <h1 class="spark-title">⚡ SPARK</h1>
     <div class="spark-acronym">Smart Platform for AI Recognition and Knowledge</div>
-    <p class="spark-desc">
-        A humanized, transparent AI detector that analyzes syntactic cadence, conversational burstiness, 
-        and subword transitions to reliably distinguish authentic human writing from LLMs like ChatGPT, Claude, and Gemini.
-    </p>
-    <div class="tech-pills">
-        <span class="pill">⚡ Subword Morphological Engine</span>
-        <span class="pill">🧠 Sentence Burstiness Radar</span>
-        <span class="pill">💬 Contraction &amp; Voice Fingerprinting</span>
-        <span class="pill">🛡️ False-Positive Protection</span>
-    </div>
 </div>
 """, unsafe_allow_html=True)
 
