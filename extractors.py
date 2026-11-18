@@ -1,18 +1,54 @@
 """
-Text Extraction Module for AI-Generated Text Detector.
+Text Extraction Module for AI-Generated Text Detector (SPARK).
 Handles:
-- Document extraction: PDF (.pdf), Word (.docx), Plain Text (.txt, .md, .rtf)
-- Web extraction: Article and blog URLs using BeautifulSoup
+- Document extraction: PDF (.pdf), Word (.docx), Plain Text (.txt, .md, .rtf, .csv)
+- Web extraction: Article and blog URLs (BeautifulSoup + robust stdlib fallback)
 - Text sanitization and validation
+- Zero mandatory external top-level dependencies for bulletproof import resilience
 """
 
 import io
 import re
 import zipfile
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 from typing import Dict, Any, Tuple, Optional
-import requests
-from bs4 import BeautifulSoup
+
+
+class SimpleHTMLTextExtractor(HTMLParser):
+    """Zero-dependency HTML body parser from Python standard library."""
+    def __init__(self):
+        super().__init__()
+        self.texts = []
+        self.title = ""
+        self.in_title = False
+        self.ignore = False
+        self.ignore_tags = {'script', 'style', 'noscript', 'header', 'footer', 'nav', 'aside', 'svg'}
+
+    def handle_starttag(self, tag, attrs):
+        tag_lower = tag.lower()
+        if tag_lower == 'title':
+            self.in_title = True
+        elif tag_lower in self.ignore_tags:
+            self.ignore = True
+
+    def handle_endtag(self, tag):
+        tag_lower = tag.lower()
+        if tag_lower == 'title':
+            self.in_title = False
+        elif tag_lower in self.ignore_tags:
+            self.ignore = False
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title += data.strip()
+        elif not self.ignore:
+            cleaned = data.strip()
+            if cleaned:
+                self.texts.append(cleaned)
+
+    def get_text(self) -> str:
+        return ' '.join(self.texts)
 
 
 def clean_text(text: str) -> str:
@@ -69,6 +105,8 @@ def extract_from_pdf(file_bytes: bytes) -> str:
         if not pages_text:
             raise ValueError("No extractable text found in PDF (it may contain scanned images).")
         return "\n\n".join(pages_text)
+    except ImportError:
+        raise ValueError("PDF parsing requires the 'pypdf' library. Please install requirements.txt or paste text directly.")
     except Exception as e:
         raise ValueError(f"Failed to parse PDF document: {str(e)}")
 
@@ -122,7 +160,7 @@ def extract_from_file(file_bytes: bytes, filename: str) -> Dict[str, Any]:
 def extract_from_url(url: str) -> Dict[str, Any]:
     """
     Extract main article/blog content from a web URL.
-    Removes ads, scripts, nav, footer, and sidebars.
+    Uses BeautifulSoup if available, with pure stdlib fallback if missing.
     """
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
@@ -134,53 +172,70 @@ def extract_from_url(url: str) -> Dict[str, Any]:
         'Accept-Language': 'en-US,en;q=0.9',
     }
 
+    # Attempt fetch and parse using BeautifulSoup + requests
     try:
+        import requests
+        from bs4 import BeautifulSoup
+
         response = requests.get(url, headers=headers, timeout=12)
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Extract title
+        title = ""
+        if soup.title and soup.title.string:
+            title = soup.title.string.strip()
+        elif soup.find('h1'):
+            title = soup.find('h1').get_text().strip()
+        else:
+            title = url
+
+        # Remove non-content elements
+        for element in soup(['script', 'style', 'noscript', 'nav', 'header', 'footer', 
+                             'aside', 'form', 'svg', 'figure', 'button', 'iframe']):
+            element.decompose()
+
+        # Look for primary content containers
+        content_node = None
+        for tag in ['article', 'main', 'div[role="main"]', '.post-content', '.article-body', '.entry-content']:
+            found = soup.select_one(tag)
+            if found and len(found.get_text().split()) > 40:
+                content_node = found
+                break
+
+        if not content_node:
+            content_node = soup.body if soup.body else soup
+
+        # Extract all paragraph texts
+        paragraphs = []
+        for p in content_node.find_all(['p', 'h2', 'h3', 'h4', 'blockquote']):
+            txt = p.get_text().strip()
+            if len(txt.split()) >= 5:
+                paragraphs.append(txt)
+
+        if not paragraphs:
+            text = content_node.get_text(separator=' ')
+            cleaned = clean_text(text)
+        else:
+            cleaned = clean_text("\n\n".join(paragraphs))
+
+    except ImportError:
+        # Robust zero-dependency fallback using urllib and standard library HTMLParser
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=12) as response:
+                html_bytes = response.read()
+                html_text = html_bytes.decode('utf-8', errors='ignore')
+
+            parser = SimpleHTMLTextExtractor()
+            parser.feed(html_text)
+            title = parser.title or url
+            cleaned = clean_text(parser.get_text())
+        except Exception as e:
+            raise ValueError(f"Unable to extract text from URL '{url}': {str(e)}")
+    except Exception as e:
         raise ValueError(f"Unable to fetch URL '{url}': {str(e)}")
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Extract title
-    title = ""
-    if soup.title and soup.title.string:
-        title = soup.title.string.strip()
-    elif soup.find('h1'):
-        title = soup.find('h1').get_text().strip()
-    else:
-        title = url
-
-    # Remove non-content elements
-    for element in soup(['script', 'style', 'noscript', 'nav', 'header', 'footer', 
-                         'aside', 'form', 'svg', 'figure', 'button', 'iframe']):
-        element.decompose()
-
-    # Look for primary content containers
-    content_node = None
-    for tag in ['article', 'main', 'div[role="main"]', '.post-content', '.article-body', '.entry-content']:
-        found = soup.select_one(tag)
-        if found and len(found.get_text().split()) > 40:
-            content_node = found
-            break
-
-    if not content_node:
-        content_node = soup.body if soup.body else soup
-
-    # Extract all paragraph texts
-    paragraphs = []
-    for p in content_node.find_all(['p', 'h2', 'h3', 'h4', 'blockquote']):
-        txt = p.get_text().strip()
-        # Filter out short UI snippets or cookie notices
-        if len(txt.split()) >= 5:
-            paragraphs.append(txt)
-
-    if not paragraphs:
-        # Fallback to general text
-        text = content_node.get_text(separator=' ')
-        cleaned = clean_text(text)
-    else:
-        cleaned = clean_text("\n\n".join(paragraphs))
 
     words = cleaned.split()
 

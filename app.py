@@ -22,13 +22,32 @@ for p in [ROOT_DIR, SRC_DIR]:
     if os.path.exists(p) and p not in sys.path:
         sys.path.insert(0, p)
 
-# Robust import supporting both flat root and src/ package layouts
+# Check for scikit-learn / joblib / numpy and guide user if requirements.txt wasn't installed
+missing_core = []
+for pkg_name, imp_name in [("scikit-learn", "sklearn"), ("joblib", "joblib"), ("numpy", "numpy")]:
+    try:
+        __import__(imp_name)
+    except ImportError:
+        missing_core.append(pkg_name)
+
+if missing_core:
+    st.error(
+        f"⚠️ **Missing Core Python Libraries**: `{', '.join(missing_core)}`\n\n"
+        "Streamlit Cloud did not install your `requirements.txt` dependencies.\n\n"
+        "**To resolve this:**\n"
+        "1. Ensure `requirements.txt` is uploaded to the **root** folder of your GitHub repository.\n"
+        "2. In Streamlit Cloud, click **Manage app** (bottom-right) ➔ **Reboot app** to re-run installation."
+    )
+    st.stop()
+
+# Import modules directly (ROOT_DIR and SRC_DIR are both in sys.path)
 try:
     import extractors
     import features
     import model
-except ImportError:
-    from src import extractors, features, model
+except Exception as err:
+    st.error(f"⚠️ **Error loading SPARK modules**: `{err}`")
+    st.stop()
 
 # Alias sys.modules for 'src.*' in case any component or unpickler looks for 'src'
 if 'src' not in sys.modules:
