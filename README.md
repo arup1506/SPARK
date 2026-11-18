@@ -1,2 +1,188 @@
-# SPARK
-An AI model that detects human vs ai english texts percentage 
+# ⚡ SPARK — Smart Platform for AI Recognition and Knowledge
+
+A humanized, transparent AI detector that analyzes syntactic cadence, conversational burstiness, and subword transitions to reliably distinguish authentic human writing from LLMs like ChatGPT, Claude, and Gemini.
+
+SPARK analyzes content from:
+1. 📝 **Direct Text Input** (Copy/Paste with instant sample loaders)
+2. 📁 **Document Files** (PDF `.pdf`, Word `.docx`, Plain text `.txt`, `.md`, `.rtf`)
+3. 🔗 **Article & Blog URLs** (Automatic web scraper extracting clean article body)
+
+Outputs comprehensive **AI % vs. Human %** distributions, overall verdict, confidence rating, sentence-by-sentence visual heatmaps, and 6 stylometric diagnostics (burstiness, contractions, 1st-person voice, punctuation richness, lexical diversity, LLM clichés).
+
+---
+
+## 🌟 Key Features
+
+- **Percentage Breakdown**: Exact probability calculation (e.g., `85.2% AI-Generated, 14.8% Human-Authored`).
+- **Multi-Document Upload**: Fast parser for `.pdf` (using `pypdf`), `.docx` (using `python-docx` + zero-dependency XML fallback), and text files.
+- **Article & Blog URL Scraper**: Extracts clean editorial text while eliminating ads, navigation, headers, and footers.
+- **Hostinger-Console Tech Aesthetic**: Modern dark obsidian glassmorphism UI with radial ambient glows, tech chips, and glowing gauges.
+- **Sentence-Level AI Heatmap**: Color-codes every sentence in the document based on individual model predictability:
+  - 🔴 **Red**: Likely AI-Generated (> 65%)
+  - 🟡 **Yellow**: Mixed / Uncertain (38% - 65%)
+  - 🟢 **Green**: Likely Human-Authored (< 38%)
+- **Stylometric & Linguistic Diagnostics (6 Core Signals)**:
+  - **Burstiness (CV)**: Measures sentence length variation and natural human cadence.
+  - **Contractions**: Conversational frequency per 100 words (high in organic human writing).
+  - **1st-Person Voice**: Human autobiographical perspective vs. impersonal AI tone.
+  - **Punctuation Diversity**: Dashes, semicolons, and parentheses variety.
+  - **Lexical Diversity (TTR)**: Type-Token Ratio and unique word counts.
+  - **LLM Clichés**: Catalog of 120+ over-indexed AI transition formulas.
+- **Configurable Sensitivity**: Balanced, Strict AI, and Human-Safe presets.
+- **Exportable Reports**: One-click download of JSON analysis reports.
+
+---
+
+## 📂 Project Structure
+
+SPARK is designed with dual-compatibility: it runs identically whether you keep files inside the `src/` directory or in the root of your GitHub repository:
+
+```
+project ABCD/
+│
+├── data/
+│   ├── dataset.csv                  # Labeled training dataset (Human vs. AI)
+│   └── generate_dataset.py          # Dataset generator and synthesizer
+│
+├── models/
+│   └── ai_detector.joblib           # Trained model artifact (TF-IDF + Calibrated Classifier)
+│
+├── src/
+│   ├── __init__.py
+│   ├── extractors.py                # Text extraction from PDF, DOCX, TXT, and web links
+│   ├── features.py                  # Burstiness, contractions, pronouns, lexical diversity
+│   └── model.py                     # Detector classifier, calibration, sentence-level analyzer
+│
+├── templates/
+│   └── index.html                   # Modern glassmorphism HTML dashboard for Flask
+│
+├── static/
+│   ├── css/style.css                # Dark tech aesthetic Hostinger console CSS
+│   └── js/app.js                    # Dynamic frontend application controller
+│
+├── app.py                           # Streamlit Web Application (SPARK)
+├── flask_app.py                     # Flask Web Application & REST API
+├── requirements.txt                 # Python dependencies
+├── Dockerfile                       # Container definition for Cloud Run / Render / AWS
+└── README.md
+```
+
+---
+
+## 🚀 Running Locally
+
+### Option A: Streamlit Web App (Recommended)
+```bash
+streamlit run app.py
+```
+
+### Option B: Flask Web App & REST API
+```bash
+python flask_app.py
+```
+Open `http://localhost:5000` in your browser.
+├── static/
+│   ├── css/style.css                # Polished styling, badges, cards, responsive layout
+│   └── js/app.js                    # AJAX controllers, progress bars, sentence highlighter
+│
+├── app.py                           # Streamlit Interactive Web Application
+├── flask_app.py                     # Flask Web Dashboard & REST API
+├── train.py                         # Model training and evaluation script
+├── test_detector.py                 # Unit tests for extractors, features, and model
+├── test_flask.py                    # Unit tests for Flask API endpoints
+├── requirements.txt                 # Python dependencies
+├── Dockerfile                       # Container deployment definition
+├── run_app.bat                      # Windows one-click launcher
+├── run_app.sh                       # Linux / macOS launcher
+├── METHODOLOGY_AND_EVALUATION.md    # Documentation of methodology & limitations
+└── README.md                        # Documentation and deployment guide
+```
+
+---
+
+## 🚀 Quick Start (Local)
+
+### Option 1: Streamlit Web App (Recommended for Demo)
+Run directly from your terminal:
+```bash
+streamlit run app.py
+```
+Open your browser at `http://localhost:8501`.
+
+### Option 2: Flask Web App & REST API
+Run the Flask server:
+```bash
+python flask_app.py
+```
+Open your browser at `http://localhost:5000`.
+
+### Option 3: One-Click Launchers
+- **Windows**: Double-click `run_app.bat`
+- **Linux / macOS**: Run `./run_app.sh`
+
+---
+
+## 🔌 REST API Endpoints (Flask)
+
+### 1. Analyze Plain Text
+```bash
+curl -X POST http://localhost:5000/api/detect \
+     -H "Content-Type: application/json" \
+     -d '{"text": "Your text to analyze..."}'
+```
+
+### 2. Upload and Analyze Document (PDF/Word/TXT)
+```bash
+curl -X POST http://localhost:5000/api/upload-file \
+     -F "file=@sample_essay.pdf"
+```
+
+### 3. Extract and Analyze Article URL
+```bash
+curl -X POST http://localhost:5000/api/analyze-url \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://example.com/blog-post"}'
+```
+
+---
+
+## 🧪 Running Tests & Retraining
+
+### Run Test Suite
+```bash
+python -m unittest test_detector.py
+python -m unittest test_flask.py
+```
+
+### Retrain Model Pipeline
+```bash
+python data/generate_dataset.py
+python train.py
+```
+
+---
+
+## ☁️ Deployment Guide
+
+### Deploying with Docker
+Build and run the Docker container:
+```bash
+# Build Docker image
+docker build -t ai-content-detector .
+
+# Run container (Streamlit on port 8501)
+docker run -p 8501:8501 ai-content-detector
+```
+
+### Deploying to Render / Cloud
+1. Connect your repository to [Render](https://render.com).
+2. Create a new **Web Service**.
+3. Set:
+   - **Environment**: `Python`
+   - **Build Command**: `pip install -r requirements.txt && python train.py`
+   - **Start Command**: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0` (or `python flask_app.py`)
+
+### Deploying to Hugging Face Spaces
+1. Create a new Space on [Hugging Face](https://huggingface.co/spaces).
+2. Choose **Streamlit** SDK.
+3. Push the repository files. It will automatically detect `requirements.txt` and `app.py`.
