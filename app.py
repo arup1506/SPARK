@@ -575,9 +575,9 @@ SAMPLE_TEXTS = {
 
 # Input Section - 3 Tabs
 tab_text, tab_file, tab_url = st.tabs([
-    "📝 Paste Text", 
-    "📁 Upload Document (PDF / Word / TXT)", 
-    "🔗 Article / Blog Link"
+    "Paste Text", 
+    "Upload Document", 
+    "Paste Link"
 ])
 
 text_to_analyze = ""
@@ -600,7 +600,7 @@ with tab_text:
             st.session_state["raw_text_input"] = SAMPLE_TEXTS["Human (Technical Blog)"]
 
     raw_text = st.text_area(
-        label="Enter or paste text (English, 50–2000+ words):",
+        label="Write or paste text:",
         value=st.session_state.get("raw_text_input", ""),
         height=220,
         placeholder="Paste your essay, article, or writing sample here..."
@@ -610,7 +610,7 @@ with tab_text:
     chars = len(raw_text) if raw_text else 0
     st.caption(f"Word count: **{words}** | Character count: **{chars}** (Recommended: 80+ words)")
     
-    if st.button("🚀 Analyze Pasted Text", type="primary", use_container_width=True):
+    if st.button("Analyze", type="primary", use_container_width=True):
         if words < 15:
             st.error("Please provide at least 15 words for meaningful detection.")
         else:
@@ -620,7 +620,7 @@ with tab_text:
 # --- TAB 2: UPLOAD DOCUMENT ---
 with tab_file:
     st.markdown("#### Upload Document")
-    st.markdown("Upload any **PDF (.pdf)**, **Word Document (.docx)**, or **Text file (.txt, .md)**.")
+    st.markdown("Upload any **File**")
     
     uploaded_file = st.file_uploader(
         "Choose a document file", 
@@ -639,7 +639,7 @@ with tab_file:
             with st.expander("📄 Document Preview (Click to expand)"):
                 st.text_area("Extracted Content", extracted["raw_text"], height=200, disabled=True)
                 
-            if st.button("🚀 Analyze Uploaded Document", type="primary", use_container_width=True):
+            if st.button("Analyze", type="primary", use_container_width=True):
                 if extracted["word_count"] < 15:
                     st.error("Extracted document has fewer than 15 words. Please upload a document with more text.")
                 else:
@@ -651,14 +651,14 @@ with tab_file:
 # --- TAB 3: ARTICLE / BLOG URL ---
 with tab_url:
     st.markdown("#### Extract & Analyze Web Link")
-    st.markdown("Provide the URL of any online blog post, news article, or publication.")
+    st.markdown("Provide the URL")
     
     input_url = st.text_input(
-        "Article URL:",
+        "**URL:**",
         placeholder="https://example.com/article-slug"
     )
     
-    if st.button("🌐 Fetch & Analyze Web Article", type="primary", use_container_width=True):
+    if st.button("Fetch & Analyze", type="primary", use_container_width=True):
         if not input_url.strip():
             st.error("Please enter a valid URL.")
         else:
@@ -666,7 +666,7 @@ with tab_url:
                 try:
                     url_res = extract_from_url(input_url.strip())
                     st.success(f"Extracted **{url_res['word_count']} words** from: *{url_res['title']}*")
-                    with st.expander("🌐 Article Preview"):
+                    with st.expander("Article Preview"):
                         st.write(f"**Title**: {url_res['title']}")
                         st.text_area("Extracted Content", url_res["raw_text"], height=160, disabled=True)
                         
@@ -696,7 +696,7 @@ if text_to_analyze:
     stats = results["stats"]
 
     # Results Header
-    st.markdown(f"### 📊 Detection Results & Breakdown")
+    st.markdown(f"### Detection Results")
     if input_source_info:
         st.caption(f"Source: **{input_source_info}** | {stats['total_words']} words | {stats['total_sentences']} sentences")
 
@@ -745,7 +745,7 @@ if text_to_analyze:
     """, unsafe_allow_html=True)
 
     # Stylometric Metrics Grid
-    st.markdown("#### 🔬 Stylometric & Linguistic Diagnostics")
+    st.markdown("#### Stylometric & Linguistic Diagnostics")
     m1, m2, m3 = st.columns(3)
     with m1:
         cv = stats["burstiness_cv"]
@@ -803,7 +803,7 @@ if text_to_analyze:
         st.caption(f"Detected formulaic markers: {', '.join([f'`{m}`' for m in markers])}")
 
     # Sentence-Level Heatmap
-    st.markdown("#### 🔍 Sentence-by-Sentence AI Heatmap")
+    st.markdown("#### Sentence-by-Sentence Heatmap")
     st.caption("Sentences are color-coded based on individual model predictability:")
     st.markdown("""
     <div style="margin-bottom:0.75rem;">
@@ -837,7 +837,7 @@ if text_to_analyze:
     st.markdown(full_heatmap_html, unsafe_allow_html=True)
 
     # Sentence Details Table in Expander
-    with st.expander("📋 Detailed Sentence Probability Table"):
+    with st.expander("Detailed Sentence Probability Table"):
         table_rows = []
         for s in results["sentences"]:
             table_rows.append({
@@ -850,7 +850,7 @@ if text_to_analyze:
         st.dataframe(table_rows, use_container_width=True)
 
     # Downloadable Report
-    st.markdown("#### 📥 Export Detection Report")
+    st.markdown("#### Export Detection Report")
     report_json = json.dumps(results, indent=2)
     st.download_button(
         label="Download Full JSON Analysis Report",
