@@ -590,27 +590,28 @@ with tab_text:
     
     selected_sample = None
     with col_sample1:
-        if st.button("Load AI Sample (ChatGPT)"):
+        if st.button("Load AI Sample (ChatGPT)", key="load_ai_sample_button"):
             st.session_state["raw_text_input"] = SAMPLE_TEXTS["AI (ChatGPT / GPT-4)"]
     with col_sample2:
-        if st.button("Load Human Essay Sample"):
+        if st.button("Load Human Essay Sample", key="load_human_essay_button"):
             st.session_state["raw_text_input"] = SAMPLE_TEXTS["Human (Personal Essay)"]
     with col_sample3:
-        if st.button("Load Human Tech Blog"):
+        if st.button("Load Human Tech Blog", key="load_human_tech_blog_button"):
             st.session_state["raw_text_input"] = SAMPLE_TEXTS["Human (Technical Blog)"]
 
     raw_text = st.text_area(
         label="Write or paste text:",
         value=st.session_state.get("raw_text_input", ""),
         height=220,
-        placeholder="Paste your essay, article, or writing sample here..."
+        placeholder="Paste your essay, article, or writing sample here...",
+        key="raw_text_input_area"
     )
     
     words = len(raw_text.split()) if raw_text else 0
     chars = len(raw_text) if raw_text else 0
     st.caption(f"Word count: **{words}** | Character count: **{chars}** (Recommended: 80+ words)")
     
-    if st.button("Analyze", type="primary", use_container_width=True):
+    if st.button("Analyze", type="primary", use_container_width=True, key="analyze_text_button"):
         if words < 15:
             st.error("Please provide at least 15 words for meaningful detection.")
         else:
@@ -625,11 +626,12 @@ with tab_file:
     uploaded_file = st.file_uploader(
         "Choose a document file", 
         type=["pdf", "docx", "txt", "md", "rtf", "csv"],
-        help="Upload files up to 20MB. Encrypted or image-only scanned PDFs are not supported."
+        help="Upload files up to 20MB. Encrypted or image-only scanned PDFs are not supported.",
+        key="document_file_uploader"
     )
     
     if uploaded_file is not None:
-        file_bytes = uploaded_file.read()
+        file_bytes = uploaded_file.getvalue()
         file_name = uploaded_file.name
         
         try:
@@ -637,9 +639,20 @@ with tab_file:
             st.success(f"Successfully extracted {extracted['word_count']} words from **{file_name}** ({extracted['file_type']}).")
             
             with st.expander("📄 Document Preview (Click to expand)"):
-                st.text_area("Extracted Content", extracted["raw_text"], height=200, disabled=True)
+                st.text_area(
+                    "Extracted Content",
+                    extracted["raw_text"],
+                    height=200,
+                    disabled=True,
+                    key="document_extracted_preview"
+                )
                 
-            if st.button("Analyze", type="primary", use_container_width=True):
+            if st.button(
+                "Analyze",
+                type="primary",
+                use_container_width=True,
+                key="analyze_document_button"
+            ):
                 if extracted["word_count"] < 15:
                     st.error("Extracted document has fewer than 15 words. Please upload a document with more text.")
                 else:
@@ -655,10 +668,11 @@ with tab_url:
     
     input_url = st.text_input(
         "**URL:**",
-        placeholder="https://example.com/article-slug"
+        placeholder="https://example.com/article-slug",
+        key="article_url_input"
     )
     
-    if st.button("Fetch & Analyze", type="primary", use_container_width=True):
+    if st.button("Fetch & Analyze", type="primary", use_container_width=True, key="fetch_analyze_url_button"):
         if not input_url.strip():
             st.error("Please enter a valid URL.")
         else:
@@ -668,7 +682,13 @@ with tab_url:
                     st.success(f"Extracted **{url_res['word_count']} words** from: *{url_res['title']}*")
                     with st.expander("Article Preview"):
                         st.write(f"**Title**: {url_res['title']}")
-                        st.text_area("Extracted Content", url_res["raw_text"], height=160, disabled=True)
+                        st.text_area(
+                            "Extracted Content",
+                            url_res["raw_text"],
+                            height=160,
+                            disabled=True,
+                            key="article_extracted_preview"
+                        )
                         
                     if url_res["word_count"] < 15:
                         st.warning("The extracted text from this URL is too short. It may be behind a paywall or heavy JavaScript.")
